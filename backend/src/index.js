@@ -159,13 +159,6 @@ app.delete("/notes", async (req, res) => {
   }
 });
 
-process.on("SIGINT", async () => {
-  console.log("\nDisconnecting Prisma...");
-  await prisma.$disconnect();
-  await pool.end();
-  process.exit(0);
-});
-
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
