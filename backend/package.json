@@ -17,7 +17,8 @@
     "tsx": "^4.21.0"
   },
   "scripts": {
-    "dev": "nodemon --exec tsx server.js"
+    "dev": "nodemon --exec tsx src/index.js",
+    "build": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
