@@ -8,16 +8,19 @@ export default function CreateNote() {
     e.preventDefault();
     try {
       //fetching data
-      const response = await fetch("http://localhost:8000/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            content,
+          }),
         },
-        body: JSON.stringify({
-          title,
-          content,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const err = await response.json();

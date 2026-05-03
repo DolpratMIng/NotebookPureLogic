@@ -19,6 +19,9 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/heath", (req, res) => {
+  res.send("working fine");
+});
 /*CRUD for note */
 //get /notes
 app.get("/notes", async (req, res) => {

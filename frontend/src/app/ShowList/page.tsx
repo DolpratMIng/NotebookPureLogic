@@ -45,17 +45,20 @@ export default function ShowList() {
     e.preventDefault();
     try {
       //fetch
-      const response = await fetch("http://localhost:8000/notes", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: selectedNote.id,
+            title: selectedNote.title,
+            content: selectedNote.content,
+          }),
         },
-        body: JSON.stringify({
-          id: selectedNote.id,
-          title: selectedNote.title,
-          content: selectedNote.content,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error("updating error");
@@ -98,15 +101,18 @@ export default function ShowList() {
   //for delete
   async function handleDelete(e: any) {
     try {
-      const response = await fetch("http://localhost:8000/notes", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: selectedNote.id,
+          }),
         },
-        body: JSON.stringify({
-          id: selectedNote.id,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const err = await response.json();
@@ -135,7 +141,9 @@ export default function ShowList() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch("http://localhost:8000/notes");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
+        );
         const result = await response.json();
         setNoteList(result);
       } catch (error) {
