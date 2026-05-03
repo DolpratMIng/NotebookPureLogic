@@ -18,7 +18,8 @@
   },
   "scripts": {
     "dev": "nodemon --exec tsx src/index.js",
-    "build": "npx prisma generate"
+    "build": "npx prisma generate",
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "",
