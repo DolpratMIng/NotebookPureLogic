@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { PrismaClient } from "./generated/prisma/client.ts";
+import { PrismaClient } from "../generated/prisma/client.ts";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 const app = express();
@@ -14,7 +14,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL,
   }),
 );
 app.use(express.json());
