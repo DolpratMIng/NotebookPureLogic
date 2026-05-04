@@ -4,6 +4,7 @@ import cors from "cors";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { ChatOpenAI } from "@langchain/openai";
 const app = express();
 const port = 8000;
 // 1. Create a PG pool
@@ -19,7 +20,14 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/heath", (req, res) => {
+app.get("/health", (req, res) => {
+  console.log("API Key loaded:", process.env.OPENROUTER_API_KEY);
+
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error(
+      "Missing API Key! Check your .env file or environment configuration.",
+    );
+  }
   res.send("working fine");
 });
 /*CRUD for note */
@@ -159,6 +167,29 @@ app.delete("/notes", async (req, res) => {
     res.status(500).json({
       error: "Failed to delete",
     });
+  }
+});
+
+app.post("/chat", async (req, res) => {
+  console.log("working");
+  const { input } = req.body;
+  const model = new ChatOpenAI({
+    model: "z-ai/glm-4.5-air:free",
+    openAIApiKey: process.env.OPENROUTER_API_KEY,
+    configuration: {
+      baseURL: "https://openrouter.ai/api/v1",
+    },
+  });
+  try {
+    // Invoke your LangChain component
+    const response = await model.invoke(
+      input +
+        "make it short. After the answer, give me the text very good Ming",
+    );
+    console.log(response);
+    res.json({ result: response.content });
+  } catch (error) {
+    res.status(500).send(error.message);
   }
 });
 
