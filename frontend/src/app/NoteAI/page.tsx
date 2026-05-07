@@ -74,12 +74,18 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             input,

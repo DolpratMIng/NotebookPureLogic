@@ -184,26 +184,45 @@ app.delete("/notes", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/chat", async (req, res) => {
-  console.log("working");
+app.post("/chat", authMiddleware, async (req, res) => {
   const { input } = req.body;
-  const model = new ChatOpenAI({
-    model: "z-ai/glm-4.5-air:free",
-    openAIApiKey: process.env.OPENROUTER_API_KEY,
-    configuration: {
-      baseURL: "https://openrouter.ai/api/v1",
-    },
-  });
+
   try {
-    // Invoke your LangChain component
-    const response = await model.invoke(
-      input +
-        "make it short. After the answer, give me the text very good Ming",
-    );
-    console.log(response);
+    // 1. Fetch the user's notes
+    const notes = await prisma.note.findMany({
+      where: { userId: req.user.userId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // 2. Build notes context string
+    const notesContext = notes
+      .map(
+        (note, index) =>
+          `Note ${index + 1}:\nTitle: ${note.title}\nContent: ${note.content}`,
+      )
+      .join("\n\n");
+
+    // 3. Build system prompt
+    const systemPrompt = `You are a helpful note-taking assistant. The user has the following notes saved:\n\n${notesContext}\n\nYou can help the user with:\n- Retrieving note content based on the title\n- Summarizing a note's content\n- Listing all notes\n\nAnswer based on the notes above. If the user asks about something not in their notes, let them know. Keep your answers concise.`;
+
+    // 4. Send to LLM with system prompt
+    const model = new ChatOpenAI({
+      model: "z-ai/glm-4.5-air:free",
+      openAIApiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+    });
+
+    const response = await model.invoke([
+      { role: "system", content: systemPrompt },
+      { role: "user", content: input },
+    ]);
+
     res.json({ result: response.content });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error("Chat error:", error);
+    res.status(500).json({ error: "Failed to get AI response" });
   }
 });
 
