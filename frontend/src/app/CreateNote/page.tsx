@@ -1,5 +1,10 @@
 "use client";
 import { useState } from "react";
+import PageLayout from "@/components/PageLayout";
+import PageHeader from "@/components/PageHeader";
+import InputField from "@/components/InputField";
+import Button from "@/components/Button";
+
 export default function CreateNote() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -7,13 +12,18 @@ export default function CreateNote() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
-      //fetching data
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             title,
@@ -32,7 +42,6 @@ export default function CreateNote() {
       console.log(data);
 
       alert("Note is successfully created.");
-      // clear form
       setTitle("");
       setContent("");
     } catch (error) {
@@ -42,50 +51,55 @@ export default function CreateNote() {
   }
 
   return (
-    <div>
-      {/*title */}
-      <div className="text-3xl text-center">Create your note</div>
+    <PageLayout>
+      <PageHeader
+        icon={
+          <svg className="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        }
+        title="Create Note"
+      />
 
-      {/*form for adding title and content */}
-      <form onSubmit={handleSubmit}>
-        {/*title and text for user input */}
-        <div className="flex flex-col items-center justify-center p-[5vh] gap-[3vh]">
-          <input
-            name="title"
-            className="border-2 border-red-500 w-[20%] text-xl"
-            placeholder="Type your title here..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <textarea
-            name="content"
-            value={content}
-            className="w-full min-h-[30vh] text-xl flex border-2 border-blue-500"
-            placeholder="Type your note here..."
-            onChange={(e) => setContent(e.target.value)}
-          ></textarea>
+      <div className="flex flex-1 items-start justify-center overflow-y-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto w-full max-w-2xl p-4 sm:p-6"
+        >
+          <div className="space-y-4">
+            <InputField
+              as="input"
+              name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note title..."
+            />
 
-          {/*Save and cancel button */}
-          <div className="flex gap-5 text-lg">
-            <button
-              type="submit"
-              className="bg-green-500 px-[3vh] cursor-pointer"
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTitle("");
-                setContent("");
-              }}
-              className="bg-red-500 px-[3vh] cursor-pointer"
-            >
-              Cancel
-            </button>
+            <InputField
+              as="textarea"
+              name="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Type your note here..."
+              rows={10}
+            />
+
+            <div className="flex gap-3">
+              <Button type="submit">Save</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setTitle("");
+                  setContent("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </PageLayout>
   );
 }

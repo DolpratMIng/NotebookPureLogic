@@ -1,5 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
+import PageLayout from "@/components/PageLayout";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import Button from "@/components/Button";
+import InputField from "@/components/InputField";
+
 type noteListType = {
   id: number | undefined;
   title: string;
@@ -7,14 +13,9 @@ type noteListType = {
   createdAt: string;
   updatedAt: string;
 };
-type updateNoteType = {
-  title: string;
-  content: string;
-};
+
 export default function ShowList() {
-  // noteList which store all the notes
   const [noteList, setNoteList] = useState<noteListType[]>([]);
-  // state to show the status of note clicking
   const [selectedNote, setSelectedNote] = useState<noteListType>({
     id: undefined,
     title: "",
@@ -22,35 +23,34 @@ export default function ShowList() {
     createdAt: "",
     updatedAt: "",
   });
-  // state to know the status of edit button is being clicked
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [mobileShowNote, setMobileShowNote] = useState(false);
 
-  //function when the user click on edit button
-  function handleEdit() {
+  function handleEdit(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
     setIsEditing(true);
   }
 
-  //for updating title
   function handleTitleContentChange(e: React.ChangeEvent<any>) {
     const newValue = e.target.value;
-
-    // Use a functional update to ensure you have the latest state
     setSelectedNote((prevState) => ({
-      ...prevState, // 1. Copy all existing properties (title, content)
-      [e.target.name]: newValue, // 2. Overwrite ONLY the title property
+      ...prevState,
+      [e.target.name]: newValue,
     }));
   }
 
   async function handleUpdate(e: any) {
     e.preventDefault();
     try {
-      //fetch
+      const token = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             id: selectedNote.id,
@@ -67,46 +67,36 @@ export default function ShowList() {
 
       const data = await response.json();
 
-      alert("Noted is successfully updated");
+      alert("Note is successfully updated");
 
-      //update noteList
       setNoteList((prev) =>
         prev.map((note) =>
-          note.id === data.id
+          note.id === selectedNote.id
             ? {
                 ...note,
-                title: data.title,
-                content: data.content,
-                updatedAt: data.updatedAt,
+                title: selectedNote.title,
+                content: selectedNote.content,
               }
             : note,
         ),
       );
 
-      //update selectedNote
-      // setSelectedNote((prev) => ({
-      //   ...prev,
-      //   title: data.title,
-      //   content: data.content,
-      //   updatedAt: data.updatedAt,
-      // }));
-
-      //reset editing mode
       setIsEditing(false);
     } catch (error) {
       console.error("error", error);
     }
   }
 
-  //for delete
   async function handleDelete(e: any) {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             id: selectedNote.id,
@@ -122,7 +112,6 @@ export default function ShowList() {
 
       alert("Note is successfully deleted.");
 
-      //update noteList
       setNoteList((prev) => prev.filter((note) => note.id !== selectedNote.id));
 
       setSelectedNote({
@@ -132,152 +121,227 @@ export default function ShowList() {
         createdAt: "",
         updatedAt: "",
       });
+      setMobileShowNote(false);
     } catch (error) {
       console.error("error:", error);
     }
   }
 
-  //useEffect for first render
   useEffect(() => {
     async function fetchData() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/notes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
         );
+        if (!response.ok) {
+          console.error("Failed to fetch notes");
+          return;
+        }
         const result = await response.json();
-        setNoteList(result);
+        setNoteList(Array.isArray(result) ? result : []);
       } catch (error) {
         console.error("Error", error);
       }
     }
     fetchData();
   }, []);
+
+  function selectNote(note: noteListType) {
+    setSelectedNote(note);
+    setIsEditing(false);
+    setMobileShowNote(true);
+  }
+
+  const noteIcon = (
+    <svg
+      className="h-8 w-8 text-emerald-400"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  );
+
   return (
-    <div className="flex h-full w-full">
-      {/*sidebar to show each note */}
-      <div className="w-[30%] border-2 border-green-500 min-h-screen p-[2vh] cursor-pointer">
-        {/*for telling the amount of notes */}
-        <div className="bg-white h-[5%] mb-[3vh]">
-          <h1 className="text-lg">Your Notes</h1>
-          <p>{noteList.length} notes saved</p>
-        </div>
-        {noteList.map((note) => (
-          <div
-            key={note.id}
-            onClick={() => {
-              setSelectedNote(note);
-              setIsEditing(false);
-            }}
-            className="border-2 border-blue-500 mb-[2vh] p-[1vh]"
+    <PageLayout>
+      <PageHeader
+        icon={
+          <svg
+            className="h-5 w-5 text-emerald-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <h2>Title: {note.title}</h2>
-            {/*date */}
-            <p>
-              Date: {new Date(note.createdAt).toLocaleDateString() || "No date"}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+        }
+        title="Your Notes"
+      />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div
+          className={`w-full flex-shrink-0 overflow-y-auto border-r border-zinc-700 bg-zinc-900 p-4 sm:w-80 ${
+            mobileShowNote ? "hidden sm:block" : ""
+          }`}
+        >
+          <div className="mb-4">
+            <p className="text-sm text-zinc-400">
+              {noteList.length} notes saved
             </p>
           </div>
-        ))}
-      </div>
-      {/*To display selected note */}
-      <div className="w-[70%] border-2 border-pink-500">
-        {/*form tag */}
-        <form onSubmit={handleUpdate} className="w-full h-full">
-          {/*The whole container of title and content */}
-          {selectedNote.id ? (
-            isEditing ? (
-              <div>
-                {/*for adding padding or margin */}
-                <div className="p-[2vh]">
-                  {/*Section for title,date, and buttons */}
-                  <div>
-                    {/*Title */}
-                    <div className="flex flex-col">
-                      <input
-                        className="text-2xl"
-                        value={selectedNote.title}
-                        onChange={handleTitleContentChange}
-                        name="title"
-                      />
-                    </div>
 
-                    {/*Date and buttons */}
-                    <div className="flex justify-between text-lg">
-                      <p>
-                        Date:{" "}
-                        {new Date(selectedNote.createdAt).toLocaleDateString()}
-                      </p>
-                      {/*buttons */}
-                      <div className="flex gap-[3vh]">
-                        <button type="submit" className="bg-green-500 px-[2vh]">
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          className="bg-red-500 px-[2vh]"
-                          onClick={() => {
-                            setIsEditing(false);
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/*Content */}
-                  <div className="pt-[2vh]">
-                    <textarea
-                      className="text-lg"
-                      value={selectedNote.content}
-                      name="content"
-                      onChange={handleTitleContentChange}
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-green-700">
-                {/*The title,buttons, and createdAt date */}
-                <div className="flex flex-col p-[2vh]">
-                  {/*Title */}
-                  <h1 className="text-2xl">{selectedNote.title}</h1>
-                  {/*the date and buttons */}
-                  <div className="flex text-lg justify-between">
-                    {/*the date */}
-                    <div>
-                      Date:{" "}
-                      {new Date(selectedNote.createdAt).toLocaleDateString()}
-                    </div>
-                    {/*buttons */}
-                    <div className="flex gap-[3vh]">
-                      <button
-                        onClick={handleEdit}
-                        className="bg-green-500 px-[2vh]"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDelete}
-                        className="bg-red-500 px-[2vh]"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/*Content */}
-                <div className="p-[2vh] text-lg">{selectedNote.content}</div>
-              </div>
-            )
+          {noteList.length === 0 ? (
+            <p className="text-center text-sm text-zinc-500">No notes yet</p>
           ) : (
-            <div className="flex items-center justify-center w-full h-full">
-              <div className=" text-3xl">Choose a note to see its content</div>
+            <div className="space-y-2">
+              {noteList.map((note) => (
+                <button
+                  key={note.id}
+                  onClick={() => selectNote(note)}
+                  className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                    selectedNote.id === note.id
+                      ? "border-emerald-500 bg-zinc-800"
+                      : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800"
+                  }`}
+                >
+                  <h2 className="truncate text-sm font-medium text-zinc-100">
+                    {note.title}
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {new Date(note.createdAt).toLocaleDateString() || "No date"}
+                  </p>
+                </button>
+              ))}
             </div>
           )}
-        </form>
+        </div>
+
+        {/* Main content */}
+        <div
+          className={`flex-1 overflow-y-auto ${
+            !mobileShowNote ? "hidden sm:block" : ""
+          }`}
+        >
+          <form onSubmit={handleUpdate} className="h-full">
+            {selectedNote.id ? (
+              isEditing ? (
+                <div className="p-4 sm:p-6">
+                  <div className="mb-4">
+                    <InputField
+                      as="input"
+                      name="title"
+                      value={selectedNote.title}
+                      onChange={handleTitleContentChange}
+                      placeholder="Note title..."
+                    />
+                  </div>
+
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-xs text-zinc-500">
+                      {new Date(selectedNote.createdAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button type="submit">Save</Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setIsEditing(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+
+                  <InputField
+                    as="textarea"
+                    name="content"
+                    value={selectedNote.content}
+                    onChange={handleTitleContentChange}
+                    placeholder="Note content..."
+                    rows={12}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 sm:p-6">
+                  <div className="mb-2 flex items-start justify-between">
+                    <h1 className="text-xl font-semibold text-zinc-100">
+                      {selectedNote.title}
+                    </h1>
+                    <button
+                      onClick={() => setMobileShowNote(false)}
+                      className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 sm:hidden"
+                      aria-label="Back to notes"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-xs text-zinc-500">
+                      {new Date(selectedNote.createdAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button type="button" onClick={handleEdit}>
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={handleDelete}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-700 bg-zinc-800 p-4">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+                      {selectedNote.content}
+                    </p>
+                  </div>
+                </div>
+              )
+            ) : (
+              <EmptyState
+                icon={noteIcon}
+                title="Choose a note"
+                description="Select a note from the sidebar to view its content"
+              />
+            )}
+          </form>
+        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
