@@ -207,7 +207,7 @@ app.post("/chat", authMiddleware, async (req, res) => {
 
     // 4. Send to LLM with system prompt
     const model = new ChatOpenAI({
-      model: "z-ai/glm-4.5-air:free",
+      model: "google/gemma-4-26b-a4b-it:free",
       openAIApiKey: process.env.OPENROUTER_API_KEY,
       configuration: {
         baseURL: "https://openrouter.ai/api/v1",
